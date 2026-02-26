@@ -1,7 +1,6 @@
 import app from "./app";
+import { CONFIG } from "../core/config";
 
-const PORT = 5000;
-
-app.listen(PORT, () => {
-  console.log(`Contest Copilot backend running on port ${PORT}`);
+app.listen(CONFIG.SERVER_PORT, () => {
+  console.log(`Contest Copilot running on port ${CONFIG.SERVER_PORT}`);
 });
