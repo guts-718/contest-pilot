@@ -7,6 +7,15 @@ import { logger } from "../core/logger";
 
 const execAsync = promisify(exec);
 
+async function isDockerRunning(): Promise<boolean> {
+  try {
+    await execAsync("docker info");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export interface RunResult {
   stdout: string;
   stderr: string;

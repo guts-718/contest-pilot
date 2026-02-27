@@ -30,8 +30,10 @@ export async function runSampleTests(
       limits,
       test.input
     );
+    console.log("exec_result",i, execResult);
 
     if (execResult.status !== "SUCCESS") {
+      console.log("status of result:i=",i," ", execResult.stderr);
       results.push({
         id: i + 1,
         status: "ERROR",
