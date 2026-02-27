@@ -1,3 +1,6 @@
+import os from "os";
+import path from "path"
+
 export const CONFIG = {
   SERVER_PORT: 5000,
 
@@ -7,7 +10,7 @@ export const CONFIG = {
   },
 
   EXECUTION: {
-    TMP_DIR: "/tmp/contest-copilot"
+    TMP_DIR: path.join(os.tmpdir(), "contest-copilot")
   },
 
   DOCKER: {
