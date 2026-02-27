@@ -1,5 +1,5 @@
-// quickTest.ts
-import { runInDocker } from "./executor/dockerRunner";
+// C_code.ts -- npx ts-node src/Test/C_code.ts
+import { runInDocker } from "../executor/dockerRunner";
 
 (async () => {
   const res = await runInDocker(
