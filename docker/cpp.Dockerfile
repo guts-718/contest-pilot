@@ -1,5 +1,7 @@
 FROM gcc:13
 
+RUN apt-get update && apt-get install -y time
+
 WORKDIR /app
 
-CMD sh -c "g++ -O2 -std=c++17 main.cpp -o main"
+CMD ["bash"]

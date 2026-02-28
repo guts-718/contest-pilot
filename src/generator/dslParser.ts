@@ -111,6 +111,6 @@ export function parseDSL(text: string): DSLParseResult {
 // console.log(parseDSL(`n: integer[1,5]`))
 
 
-console.log(parseDSL(`n: int[1,5]
-arr: array[n] int[1,10]
-s: string[1,10] lowercase`))
+// console.log(parseDSL(`n: int[1,5]
+// arr: array[n] int[1,10]
+// s: string[1,10] lowercase`))

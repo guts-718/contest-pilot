@@ -35,5 +35,5 @@ arr: array[n] int[1,1000]
     ast.nodes
   );
 
-  console.log(result);
+  console.log("result : ", result);
 })();

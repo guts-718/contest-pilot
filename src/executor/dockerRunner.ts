@@ -31,6 +31,7 @@ export async function runInDocker(
   stdout: string;
   stderr: string;
   timeMs: number;
+  memoryKB?: number;
   status: "SUCCESS" | "TLE" | "RUNTIME_ERROR" | "COMPILE_ERROR";
 }> {
   const id = Date.now() + "-" + Math.random().toString(36).slice(2);
@@ -70,7 +71,7 @@ export async function runInDocker(
     //  Run Phase 
     const runCmd =
       language === "cpp"
-        ? `sh -c "./main < input.txt"`
+        ? `sh -c "/usr/bin/time -v ./main < input.txt"`
         : `sh -c "python3 main.py < input.txt"`;
 
     const cmd =
@@ -83,10 +84,15 @@ export async function runInDocker(
       timeout: limits.timeMs
     });
 
+   const memMatch = stderr.match(/Maximum resident set size.*: (\d+)/);
+
+    const memoryKB = memMatch ? Number(memMatch[1]) : 0;
+
     return {
       stdout: stdout.trim(),
       stderr: stderr.trim(),
       timeMs: Date.now() - start,
+      memoryKB,
       status: "SUCCESS"
     };
   } catch (err: any) {

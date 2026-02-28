@@ -7,6 +7,7 @@ export interface StressResult {
   runs: number;
   avgMs: number;
   maxMs: number;
+  maxMemoryKB: number;
   errors: number;
   tleCount: number;
   firstFailureInput?: string;
@@ -18,21 +19,28 @@ export async function runStress(
   language: "cpp" | "python",
   limits: { timeMs: number; memoryMB: number },
   nodes: DSLNode[],
-  maxDurationMs = 3000,
-  minRuns = 25
+  maxDurationMs = 100,
+  minRuns = 5
 ): Promise<StressResult> {
   const start = Date.now();
 
   const dataset: string[] = [];
 
   // ---------- DATASET BUILD ----------
+  /*
+  -- below lines should be replace with this ;;;
+   dataset.length < minRuns ||
+    Date.now() - start < maxDurationMs
+    */
   while (
-    dataset.length < minRuns ||
+    dataset.length < minRuns &&
     Date.now() - start < maxDurationMs
   ) {
-    let p=generateInput(nodes);
-    console.log("p: ",p);
-    dataset.push(p);
+
+    // let p=generateInput(nodes);
+    // console.log("p: ",p);
+    // dataset.push(p);
+    dataset.push(generateInput(nodes));
   }
 
   // ---------- EXECUTION ----------
@@ -41,11 +49,12 @@ export async function runStress(
   let max = 0;
   let errors = 0;
   let tleCount = 0;
+  let maxMemory = 0;
   let firstFailureInput: string | undefined;
 
   for (const input of dataset) {
     const res = await runInDocker(code, language, limits, input);
-
+    if (res.memoryKB) maxMemory = Math.max(maxMemory, res.memoryKB);
     runs++;
     total += res.timeMs;
     max = Math.max(max, res.timeMs);
@@ -53,6 +62,7 @@ export async function runStress(
     if (res.status === "TLE") tleCount++;
 
     if (res.status !== "SUCCESS") {
+      console.log("RES: ", res);
       errors++;
       if (!firstFailureInput) firstFailureInput = input;
     }
@@ -62,6 +72,7 @@ export async function runStress(
     runs,
     avgMs: total / runs,
     maxMs: max,
+    maxMemoryKB: maxMemory,
     errors,
     tleCount,
     firstFailureInput
