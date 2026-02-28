@@ -1,5 +1,5 @@
 export type Language = "cpp" | "python";
-
+import { StressResult } from "../stress/stressRunner";
 export interface AnalyzeRequest {
   code: string;
   language: Language;
@@ -20,6 +20,7 @@ export interface TestResult {
   diff?: string;
 }
 
+
 export interface AnalyzeResponse {
   complexity: string;
   constraintRisk: "LOW" | "MEDIUM" | "HIGH";
@@ -29,6 +30,7 @@ export interface AnalyzeResponse {
   memoryMB?: number;
   tests?: TestResult[];
   warnings: string[];
+  stress?: StressResult
 }
 
 export interface ProblemLimits {

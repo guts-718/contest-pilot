@@ -5,7 +5,7 @@ export const CONFIG = {
   SERVER_PORT: 5000,
 
   DEFAULT_LIMITS: {
-    TIME_MS: 1000,
+    TIME_MS: 2000,
     MEMORY_MB: 256
   },
 

@@ -19,7 +19,7 @@ export async function runStress(
   language: "cpp" | "python",
   limits: { timeMs: number; memoryMB: number },
   nodes: DSLNode[],
-  maxDurationMs = 100,
+  maxDurationMs = 2000,
   minRuns = 5
 ): Promise<StressResult> {
   const start = Date.now();
@@ -37,10 +37,10 @@ export async function runStress(
     Date.now() - start < maxDurationMs
   ) {
 
-    // let p=generateInput(nodes);
-    // console.log("p: ",p);
-    // dataset.push(p);
-    dataset.push(generateInput(nodes));
+    let p=generateInput(nodes);
+    console.log("p: ",p);
+    dataset.push(p);
+    // dataset.push(generateInput(nodes));
   }
 
   // ---------- EXECUTION ----------

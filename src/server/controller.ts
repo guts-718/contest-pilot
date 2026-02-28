@@ -3,6 +3,12 @@ import { AnalyzeRequest, AnalyzeResponse } from "../types/apiTypes";
 import { runSampleTests } from "../executor/testRunner";
 import { CONFIG } from "../core/config";
 import { jobQueue } from "../core/jobQueue";
+
+import { extractConstraints } from "../parser/constraintParser";
+import { constraintsToDSL } from "../parser/constraintToDSL";
+import { parseDSL } from "../generator/dslParser";
+import { runStress, StressResult } from "../stress/stressRunner";
+
 import {
   getLoopDepth,
   estimateComplexity,
@@ -10,41 +16,101 @@ import {
   hasRecursion
 } from "../analyzer/complexity";
 
+function normalizeCode(code: string) {
+  return code.replace(/\r\n/g, "\n");
+}
+
+function sanitizeLanguage(lang: string): "cpp" | "python" {
+  return lang.trim().toLowerCase() as "cpp" | "python";
+}
 
 export async function analyzeHandler(req: Request, res: Response) {
-  console.log("request whole: ",req.body);
   const body = req.body as AnalyzeRequest;
-  console.log("body: ",body);
+
+  if (!body?.code || !body?.language) {
+    return res.status(400).json({
+      error: "Missing required fields: code, language"
+    });
+  }
+
+  const language = sanitizeLanguage(body.language);
+
   const limits = {
-    timeMs: body?.limits?.timeMs ?? CONFIG.DEFAULT_LIMITS.TIME_MS,
-    memoryMB: body?.limits?.memoryMB ?? CONFIG.DEFAULT_LIMITS.MEMORY_MB
-  };
-  
-  const result = await jobQueue.add(async () => {
-  const loopDepth = getLoopDepth(body.code, body.language);
-  const complexity = estimateComplexity(loopDepth);
-  const recursion = hasRecursion(body.code);
-
-  const risk = riskLevel(complexity);
-
-  console.log("body.code", JSON.stringify(body.code));
-  const normalizedCode = body.code.replace(/\r\n/g, "\n");
-  console.log("LANG:", JSON.stringify(body.language));
-  const tests = body.samples?.length
-    ? await runSampleTests(normalizedCode, body.language, limits, body.samples)
-    : [];
-
-  const response: AnalyzeResponse = {
-    complexity,
-    constraintRisk: risk,
-    recursionDetected: recursion,
-    runtimeStatus: "SUCCESS",
-    tests,
-    warnings: []
+    timeMs: body.limits?.timeMs ?? CONFIG.DEFAULT_LIMITS.TIME_MS,
+    memoryMB: body.limits?.memoryMB ?? CONFIG.DEFAULT_LIMITS.MEMORY_MB
   };
 
-  return response;
-  });
+  try {
+    const result = await jobQueue.add(async () => {
+      const normalizedCode = normalizeCode(body.code);
 
-  res.json(result);
+      // ---------- STATIC ANALYSIS ----------
+      const loopDepth = getLoopDepth(normalizedCode, language);
+      const complexity = estimateComplexity(loopDepth);
+      const recursion = hasRecursion(normalizedCode);
+      const risk = riskLevel(complexity);
+
+      // ---------- SAMPLE TESTS ----------
+      const tests = body.samples?.length
+        ? await runSampleTests(normalizedCode, language, limits, body.samples)
+        : [];
+
+      // ---------- DSL GENERATION ----------
+      let dslNodes: any[] = [];
+      let warnings: string[] = [];
+
+      if (body.problemText) {
+        const parsed = extractConstraints(body.problemText);
+
+        const dsl = constraintsToDSL(parsed);
+        const ast = parseDSL(dsl);
+
+        dslNodes = ast.nodes;
+
+        if (parsed.confidence < 0.7) {
+          warnings.push("Low confidence constraint parsing");
+        }
+
+        if (parsed.unknownSegments.length) {
+          warnings.push("Some constraints could not be parsed");
+        }
+      }
+
+      // ---------- STRESS TEST ----------
+      let stress: StressResult;
+
+      if (dslNodes.length > 0) {
+        stress = await runStress(
+          normalizedCode,
+          language,
+          limits,
+          dslNodes,
+          2000
+        );
+      }
+
+      // ---------- RESPONSE ----------
+      const response: AnalyzeResponse = {
+        complexity,
+        constraintRisk: risk,
+        recursionDetected: recursion,
+        runtimeStatus: "SUCCESS",
+        tests,
+        warnings,
+        stress
+      };
+
+      return response;
+    });
+
+    res.json(result);
+
+  } catch (err: any) {
+    console.error("Analyze error:", err);
+
+    res.status(500).json({
+      error: "Internal analysis error",
+      details: err.message
+    });
+  }
 }
