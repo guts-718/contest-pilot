@@ -12,7 +12,7 @@ int main(){int x;cin>>x;cout<<x*2;}
   const brute = `
 #include <bits/stdc++.h>
 using namespace std;
-int main(){int x;cin>>x;cout<<x*2;}
+int main(){int x;cin>>x;cout<<x*2+1;}
 `;
 
   const spec = `x: int[1,10]`;
