@@ -100,6 +100,15 @@ export async function runInDocker(
       `docker run --rm -m ${limits.memoryMB}m --cpus=1 ` +
       `-v "${dir}:/app" ${image} ${runCmd}`;
 
+    // warmup run (to ignore the warmup time)
+    // without warmup the first run would be slower than the rest
+    // with warmup we ignore the fast, so that average isn't inflated
+    try {
+      await execAsync(cmd, { timeout: limits.timeMs });
+      console.log("warmup run done");
+    } catch {
+      // ignoring warmup failures
+    }
     const start = Date.now();
 
     const { stdout, stderr } = await execAsync(cmd, {

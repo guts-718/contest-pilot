@@ -30,10 +30,15 @@ export interface AnalyzeResponse {
   memoryMB?: number;
   tests?: TestResult[];
   warnings: string[];
-  stress?: StressResult
+  stress?: StressResult,
+  empiricalComplexity?: {
+    complexity: string;
+    confidence: number;
+  };
 }
 
 export interface ProblemLimits {
   timeMs?: number;
   memoryMB?: number;
 }
+

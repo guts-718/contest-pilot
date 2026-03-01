@@ -8,6 +8,7 @@ import { extractConstraints } from "../parser/constraintParser";
 import { constraintsToDSL } from "../parser/constraintToDSL";
 import { parseDSL } from "../generator/dslParser";
 import { runStress, StressResult } from "../stress/stressRunner";
+import { detectEmpiricalComplexity } from "../analyzer/empiricalRunner";
 
 import {
   getLoopDepth,
@@ -46,9 +47,11 @@ export async function analyzeHandler(req: Request, res: Response) {
 
       // ---------- STATIC ANALYSIS ----------
       const loopDepth = getLoopDepth(normalizedCode, language);
-      const complexity = estimateComplexity(loopDepth);
       const recursion = hasRecursion(normalizedCode);
-      const risk = riskLevel(complexity);
+      const complexity = estimateComplexity(loopDepth, recursion);
+      
+      //riskLevel(loopDepth: number,n = 1e5,recursive = false)
+      const risk = riskLevel(loopDepth,1e5,recursion);
 
       // ---------- SAMPLE TESTS ----------
       const tests = body.samples?.length
@@ -76,8 +79,9 @@ export async function analyzeHandler(req: Request, res: Response) {
         }
       }
 
-      // ---------- STRESS TEST ----------
+      // STRESS TEST 
       let stress: StressResult;
+      let empirical = null;
 
       if (dslNodes.length > 0) {
         stress = await runStress(
@@ -86,6 +90,15 @@ export async function analyzeHandler(req: Request, res: Response) {
           limits,
           dslNodes,
           2000
+        );
+
+        // ---------- EMPIRICAL COMPLEXITY ----------
+        empirical = await detectEmpiricalComplexity(
+          normalizedCode,
+          language,
+          limits,
+          dslNodes,
+          body.problemText
         );
       }
 
@@ -97,7 +110,8 @@ export async function analyzeHandler(req: Request, res: Response) {
         runtimeStatus: "SUCCESS",
         tests,
         warnings,
-        stress
+        stress,
+        empiricalComplexity: empirical,
       };
 
       return response;
