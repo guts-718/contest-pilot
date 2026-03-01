@@ -64,7 +64,7 @@ export function hasRecursion(code: string): boolean {
 
 export function estimateComplexity(
   loopDepth: number,
-  recursive: boolean
+  recursive: boolean = false
 ): Complexity {
   if (recursive) return "O(recursive)";
 

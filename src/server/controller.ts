@@ -48,10 +48,10 @@ export async function analyzeHandler(req: Request, res: Response) {
       // ---------- STATIC ANALYSIS ----------
       const loopDepth = getLoopDepth(normalizedCode, language);
       const recursion = hasRecursion(normalizedCode);
-      const complexity = estimateComplexity(loopDepth, recursion);
+      const complexity = estimateComplexity(loopDepth);
       
       //riskLevel(loopDepth: number,n = 1e5,recursive = false)
-      const risk = riskLevel(loopDepth,1e5,recursion);
+      const risk = riskLevel(loopDepth);
 
       // ---------- SAMPLE TESTS ----------
       const tests = body.samples?.length

@@ -9,6 +9,48 @@ interface Sample {
   n: number;
   time: number;
 }
+function selectDominantVariable(dslNodes: DSLNode[]) {
+
+  const intVars = dslNodes.filter(n => n.kind === "int");
+  if (intVars.length === 0) return null;
+
+  const arrayNodes = dslNodes.filter(n => n.kind === "array");
+
+  let bestVar = intVars[0];
+  let bestScore = -Infinity;
+
+  for (const v of intVars) {
+    let score = 0;
+
+    // RANGE SIZE 
+    const min = Number(v.min);
+    const max = Number(v.max);
+    if (!isNaN(min) && !isNaN(max)) {
+      score += Math.log10(Math.abs(max - min) + 1); // larger range → higher score
+    }
+
+    // USED IN ARRAY SIZE 
+    const usedInArray = arrayNodes.some(a => a.size === v.name);
+    if (usedInArray) score += 8;
+
+    // COMMON SIZE NAMES 
+    const name = v.name.toLowerCase();
+    if (name === "n") score += 5;
+    if (name === "m") score += 4;
+    if (name.includes("len") || name.includes("size")) score += 4;
+
+    // MULTIPLE ARRAY USAGE
+    const arrayUsageCount = arrayNodes.filter(a => a.size === v.name).length;
+    score += arrayUsageCount * 3;
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestVar = v;
+    }
+  }
+
+  return bestVar;
+}
 
 export async function detectEmpiricalComplexity(
   code: string,
@@ -21,15 +63,11 @@ export async function detectEmpiricalComplexity(
   const pattern = detectPattern(dslNodes, problemText);
   const candidates = getCandidates(pattern);
 
-  // detect dominant size variable (largest int range)
-  const sizeVars = dslNodes.filter(n => n.kind === "int");
+  const dominant = selectDominantVariable(dslNodes);
 
-  if (sizeVars.length === 0) {
+  if (!dominant) {
     return { complexity: "UNKNOWN", confidence: 0 };
   }
-
-  const dominant = sizeVars[0]; // simple v1 (fallback rule)
-
   const samples: Sample[] = [];
 
   let currentSize = 512;
@@ -47,13 +85,28 @@ export async function detectEmpiricalComplexity(
 
     const input = generateInput(scaledNodes);
 
-    const res = await runInDocker(code, language, limits, input);
+    const times: number[] = [];
 
-    if (res.status !== "SUCCESS") break;
+    for (let i = 0; i < 5; i++) {
+      const res = await runInDocker(code, language, limits, input);
+
+      if (res.status !== "SUCCESS") {
+        times.length = 0;
+        break;
+      }
+
+      times.push(res.timeMs);
+    }
+
+    if (times.length === 0) break;
+
+    // median
+    times.sort((a, b) => a - b);
+    const median = times[Math.floor(times.length / 2)];
 
     samples.push({
       n: currentSize,
-      time: res.timeMs
+      time: median
     });
 
     currentSize *= 2; // exponential scaling
