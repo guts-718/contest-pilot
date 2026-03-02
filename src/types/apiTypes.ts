@@ -10,6 +10,7 @@ export interface AnalyzeRequest {
     input: string;
     output: string;
   }[];
+  bruteCode?: string;
 }
 
 export interface TestResult {

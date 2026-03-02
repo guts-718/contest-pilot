@@ -9,6 +9,7 @@ import { constraintsToDSL } from "../parser/constraintToDSL";
 import { parseDSL } from "../generator/dslParser";
 import { runStress, StressResult } from "../stress/stressRunner";
 import { detectEmpiricalComplexity } from "../analyzer/empiricalRunner";
+import { runEdgeSweep } from "../sweeper/edgeSweeper";
 
 import {
   getLoopDepth,
@@ -45,20 +46,20 @@ export async function analyzeHandler(req: Request, res: Response) {
     const result = await jobQueue.add(async () => {
       const normalizedCode = normalizeCode(body.code);
 
-      // ---------- STATIC ANALYSIS ----------
+      // static analysis
       const loopDepth = getLoopDepth(normalizedCode, language);
       const recursion = hasRecursion(normalizedCode);
       const complexity = estimateComplexity(loopDepth);
       
-      //riskLevel(loopDepth: number,n = 1e5,recursive = false)
+      // riskLevel(loopDepth: number,n = 1e5,recursive = false)
       const risk = riskLevel(loopDepth);
 
-      // ---------- SAMPLE TESTS ----------
+      // sample tests
       const tests = body.samples?.length
         ? await runSampleTests(normalizedCode, language, limits, body.samples)
         : [];
 
-      // ---------- DSL GENERATION ----------
+      // dsl generator
       let dslNodes: any[] = [];
       let warnings: string[] = [];
 
@@ -79,9 +80,20 @@ export async function analyzeHandler(req: Request, res: Response) {
         }
       }
 
-      // STRESS TEST 
+      // stress testing
       let stress: StressResult;
       let empirical = null;
+      let sweep = null;
+
+      if (dslNodes.length > 0) {
+        sweep = await runEdgeSweep(
+        normalizedCode,
+        language,
+        limits,
+        dslNodes,
+        body.bruteCode
+      );
+      }
 
       if (dslNodes.length > 0) {
         stress = await runStress(
@@ -92,7 +104,7 @@ export async function analyzeHandler(req: Request, res: Response) {
           2000
         );
 
-        // ---------- EMPIRICAL COMPLEXITY ----------
+        // empirical complexity
         empirical = await detectEmpiricalComplexity(
           normalizedCode,
           language,
@@ -102,7 +114,7 @@ export async function analyzeHandler(req: Request, res: Response) {
         );
       }
 
-      // ---------- RESPONSE ----------
+      // response
       const response: AnalyzeResponse = {
         complexity,
         constraintRisk: risk,
@@ -112,6 +124,7 @@ export async function analyzeHandler(req: Request, res: Response) {
         warnings,
         stress,
         empiricalComplexity: empirical,
+        edgeSweep: sweep,
       };
 
       return response;

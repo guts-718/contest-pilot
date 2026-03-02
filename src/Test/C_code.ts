@@ -3,9 +3,12 @@ import { runInDocker } from "../executor/dockerRunner";
 
 (async () => {
   const res = await runInDocker(
-    `#include <iostream>
-using namespace std;
-int main(){int x;cin>>x;cout<<2*x<<endl;cout<<"hello_world";while(1){x++;x--;}}`,
+    ` #include <iostream>
+      using namespace std;
+      int main(){
+      int x; cin>>x;
+      cout<<x*2;
+      }`,
     "cpp",
     { timeMs: 2000, memoryMB: 256 },
     "5"

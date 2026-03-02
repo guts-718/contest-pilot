@@ -17,102 +17,6 @@ export interface DSLParseResult {
   errors: string[];
 }
 
-// export function parseDSL(text: string): DSLParseResult {
-//   const lines = text
-//     .split("\n")
-//     .map(l => l.trim())
-//     .filter(Boolean);
-
-//   const nodes: DSLNode[] = [];
-//   const errors: string[] = [];
-
-//   for (let i = 0; i < lines.length; i++) {
-//     const line = lines[i];
-
-//     if (!line.includes(":")) {
-//       errors.push(`Line ${i + 1}: Missing ':'`);
-//       continue;
-//     }
-
-//     const [namePart, defPart] = line.split(":");
-
-//     const name = namePart.trim();
-//     const def = defPart.trim();
-
-//     if (!/^[a-zA-Z_]\w*$/.test(name)) {
-//       errors.push(`Line ${i + 1}: Invalid variable name '${name}'`);
-//       continue;
-//     }
-
-//     // ---------- INT ----------
-//     const intMatch = def.match(/^int\[(.+?),(.+?)\]$/);
-
-//     if (intMatch) {
-//     const [, min, max] = intMatch;
-
-//     nodes.push({
-//         kind: "int",
-//         name,
-//         min: min.trim(),
-//         max: max.trim()
-//     });
-
-//     continue;
-//     }
-//    //errors.push(`Line ${i + 1}: Invalid definition '${def}'`);
-//     // ---------- ARRAY ----------
-//     const arrMatch = def.match(/^array\[(.+?)\]\s+int\[(.+?),(.+?)\]$/);
-
-//     if (arrMatch) {
-//     const [, size, min, max] = arrMatch;
-
-//     nodes.push({
-//         kind: "array",
-//         name,
-//         size: size.trim(),
-//         min: min.trim(),
-//         max: max.trim()
-//     });
-
-//     continue;
-//     }
-
-//     // ---------- STRING ----------
-//     const strMatch = def.match(/^string\[(.+?),(.+?)\]\s+(lowercase|uppercase|digits)$/);
-
-//     if (strMatch) {
-//     const [, min, max, charset] = strMatch;
-
-//     nodes.push({
-//         kind: "string",
-//         name,
-//         min: min.trim(),
-//         max: max.trim(),
-//         charset
-//     });
-
-//     continue;
-//     }
-
-//     // permutation[n]
-//     const permMatch = line.match(/^(\w+):\s*permutation\[(\w+)\]$/);
-
-//     if (permMatch) {
-//       const [, name, size] = permMatch;
-
-//       nodes.push({
-//         kind: "permutation",
-//         name,
-//         size
-//       });
-
-//       continue;
-//     }
-//   }
-
-//   return { nodes, errors };
-// }
-
 export function parseDSL(dsl: string) {
   const nodes: DSLNode[] = [];
 
@@ -140,11 +44,28 @@ export function parseDSL(dsl: string) {
       .filter(Boolean);
 
     const meta: Record<string, any> = {};
-
     if (rest?.trim()) {
-      meta.extra = rest.trim();
-    }
+      const tokens = rest.trim().split(/\s+/);
 
+      meta.extra = tokens.find(t => t.includes("[") && t.includes("int"));
+      meta.modifiers = tokens
+        .filter(t => t !== meta.extra)
+        .map(t => {
+          // mode=worst
+          const eq = t.match(/^(\w+)=(\w+)$/);
+          if (eq) {
+            return { name: eq[1], param: eq[2] };
+          }
+
+          // boundedDiff[3]
+          const br = t.match(/^(\w+)(?:\[(.*?)\])?$/);
+          if (br) {
+            return { name: br[1], param: br[2] };
+          }
+
+          return { name: t };
+        });
+    }
     nodes.push({
       kind,
       name,
@@ -172,3 +93,19 @@ export function parseDSL(dsl: string) {
 // console.log(parseDSL(`n: int[1,5]
 // arr: array[n] int[1,10]
 // s: string[1,10] lowercase`))
+
+console.log(parseDSL(
+  `n: int[6,6]
+a: array[n] int[1,10] increasing`
+).nodes[1].meta)
+
+
+console.log(parseDSL(
+  `n: int[7,7]
+a: array[n] int[1,9] palindrome`
+).nodes[1].meta)
+
+console.log(parseDSL(
+  `n: int[8,8]
+a: array[n] int[1,100] boundedDiff[2]`
+).nodes[1].meta)

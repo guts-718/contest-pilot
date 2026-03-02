@@ -1,5 +1,76 @@
 import { registerHandler } from "./engine";
 
+
+function applyModifiers(arr: number[], mods?: any[]) {
+  if (!mods) return arr;
+
+  //  MODE 
+  const modeMod = mods.find(m => m.name === "mode");
+    if (modeMod) {
+        const mode = modeMod.param ?? "random";
+
+        if (mode === "min") {
+        const min = Math.min(...arr);
+        arr = arr.map(() => min);
+        }
+
+        else if (mode === "max") {
+        const max = Math.max(...arr);
+        arr = arr.map(() => max);
+        }
+
+        else if (mode === "worst") {
+        arr = [...arr].sort((a,b)=>b-a);
+        }
+
+        else if (mode === "alt") {
+        arr = arr.map((v,i)=> i%2===0 ? v : -v);
+        }
+    }
+
+  // apply remaining modifiers except mode
+  for (const m of mods) {
+
+    if (m.name === "mode") continue;
+
+    if (m.name === "distinct" || m.name === "unique") {
+      arr = [...new Set(arr)];
+    }
+
+    else if (m.name === "sorted") {
+      arr = [...arr].sort((a,b)=>a-b);
+    }
+
+    else if (m.name === "revsorted" || m.name === "decreasing") {
+      arr = [...arr].sort((a,b)=>b-a);
+    }
+
+    else if (m.name === "increasing") {
+      arr = [...arr]
+        .sort((a,b)=>a-b)
+        .map((v,i)=>v+i);
+    }
+
+    else if (m.name === "palindrome") {
+      const half = Math.floor(arr.length/2);
+      for (let i=0;i<half;i++)
+        arr[arr.length-1-i]=arr[i];
+    }
+
+    else if (m.name === "boundedDiff") {
+      const k = Number(m.param ?? 1);
+      for (let i=1;i<arr.length;i++) {
+        const diff = arr[i] - arr[i-1];
+        if (Math.abs(diff) > k)
+          arr[i] = arr[i-1] + (diff>0 ? k : -k);
+      }
+    }
+  }
+
+  return arr;
+}
+
+
 // utility
 function randInt(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -32,14 +103,16 @@ function shuffle(arr: number[]) {
 
 // array
 registerHandler("array", (node, ctx) => {
-  const size = ctx.values[node.params[0]];
-  const [min, max] = parseRange(node.meta?.extra);
+    const size = ctx.values[node.params[0]];
+    const [min, max] = parseRange(node.meta?.extra);
 
-  const arr = Array.from({ length: size }, () =>
-    randInt(min, max)
-  );
+    let arr = Array.from({ length: size }, () =>
+        randInt(min, max)
+    );
 
-  ctx.output.push(arr.join(" "));
+    arr = applyModifiers(arr, node.meta?.modifiers);
+
+    ctx.output.push(arr.join(" "));
 });
 
 
