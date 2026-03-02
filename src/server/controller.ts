@@ -10,6 +10,7 @@ import { parseDSL } from "../generator/dslParser";
 import { runStress, StressResult } from "../stress/stressRunner";
 import { detectEmpiricalComplexity } from "../analyzer/empiricalRunner";
 import { runEdgeSweep } from "../sweeper/edgeSweeper";
+import { explainFailure } from "../analyzer/explainer";
 
 import {
   getLoopDepth,
@@ -113,6 +114,7 @@ export async function analyzeHandler(req: Request, res: Response) {
           body.problemText
         );
       }
+      const explanation = explainFailure(sweep, empirical?.complexity);
 
       // response
       const response: AnalyzeResponse = {
@@ -125,6 +127,7 @@ export async function analyzeHandler(req: Request, res: Response) {
         stress,
         empiricalComplexity: empirical,
         edgeSweep: sweep,
+        explanation,
       };
 
       return response;

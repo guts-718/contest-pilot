@@ -13,6 +13,11 @@ export interface AnalyzeRequest {
   bruteCode?: string;
 }
 
+export interface explanation{
+   reason: string;
+   confidence: number;
+}
+
 export interface TestResult {
   id: number;
   status: "PASS" | "FAIL" | "ERROR";
@@ -36,6 +41,7 @@ export interface AnalyzeResponse {
     complexity: string;
     confidence: number;
   };
+  explanation?: explanation;
 }
 
 export interface ProblemLimits {
