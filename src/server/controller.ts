@@ -11,6 +11,8 @@ import { runStress, StressResult } from "../stress/stressRunner";
 import { detectEmpiricalComplexity } from "../analyzer/empiricalRunner";
 import { runEdgeSweep } from "../sweeper/edgeSweeper";
 import { explainFailure } from "../analyzer/explainer";
+import { clusterFailures } from "../analyzer/failureCluster";
+import { rankFailures } from "../analyzer/rankFailures";
 
 import {
   getLoopDepth,
@@ -115,8 +117,10 @@ export async function analyzeHandler(req: Request, res: Response) {
         );
       }
       const explanation = explainFailure(sweep, empirical?.complexity);
-
+      const clusters = clusterFailures(sweep);
+      const ranked = rankFailures(clusters);
       // response
+
       const response: AnalyzeResponse = {
         complexity,
         constraintRisk: risk,
@@ -128,6 +132,8 @@ export async function analyzeHandler(req: Request, res: Response) {
         empiricalComplexity: empirical,
         edgeSweep: sweep,
         explanation,
+        clusters,
+        rankedFailures: ranked,
       };
 
       return response;

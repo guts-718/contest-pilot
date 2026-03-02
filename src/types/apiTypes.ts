@@ -1,5 +1,6 @@
 export type Language = "cpp" | "python";
 import { StressResult } from "../stress/stressRunner";
+import { Cluster } from "../analyzer/failureCluster";
 export interface AnalyzeRequest {
   code: string;
   language: Language;
@@ -26,6 +27,12 @@ export interface TestResult {
   diff?: string;
 }
 
+export interface rankedFailures{
+  pattern: string;
+  priority: number;
+  severity: number;
+  count: number;
+};
 
 export interface AnalyzeResponse {
   complexity: string;
@@ -42,6 +49,8 @@ export interface AnalyzeResponse {
     confidence: number;
   };
   explanation?: explanation;
+  clusters?: Cluster[];
+  rankedFailures: rankedFailures[];
 }
 
 export interface ProblemLimits {

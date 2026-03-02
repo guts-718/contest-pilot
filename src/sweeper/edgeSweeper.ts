@@ -7,7 +7,7 @@ interface SweepResult {
   case: string;
   status: string;
   timeMs: number;
-  minimizedInput?: string;
+  minimizedInputs?: string[];
 }
 
 function clone(nodes: DSLNode[]): DSLNode[] {
@@ -46,7 +46,7 @@ export async function runEdgeSweep(
 
     let status = "SUCCESS";
     let timeMs = 0;
-    let minimizedInput: string | undefined = undefined;
+    let minimizedInputs: string[];
 
     if (bruteCode) {
       const brute = await runInDocker(bruteCode, language, limits, input);
@@ -62,13 +62,13 @@ export async function runEdgeSweep(
         } else if (sol.stdout.trim() !== brute.stdout.trim()) {
           status = "WA";
 
-          minimizedInput = await minimizeInput(
+           minimizedInputs = await minimizeInput(
             input,
             code,
             bruteCode,
             language,
             limits
-          );
+            );
         } else {
           status = "PASS";
         }
@@ -83,7 +83,7 @@ export async function runEdgeSweep(
       case: c,
       status,
       timeMs,
-      minimizedInput
+      minimizedInputs
     });
   }
 

@@ -1,14 +1,30 @@
 import { runInDocker } from "../executor/dockerRunner";
 
+interface Limits {
+  timeMs: number;
+  memoryMB: number;
+}
+
+const MAX_RESULTS = 3;
+const MAX_LINES = 20;
+const MAX_CHARS = 200;
+
+function isSmallEnough(input: string) {
+  return (
+    input.length <= MAX_CHARS &&
+    input.split("\n").length <= MAX_LINES
+  );
+}
+
 export async function minimizeInput(
   input: string,
   code: string,
   bruteCode: string | undefined,
   language: "cpp" | "python",
-  limits: { timeMs: number; memoryMB: number }
-) {
+  limits: Limits
+): Promise<string[]> {
 
-  if (!bruteCode) return input;
+  if (!bruteCode) return [input];
 
   const originalLines = input.trim().split("\n");
 
@@ -17,10 +33,13 @@ export async function minimizeInput(
     if (brute.status !== "SUCCESS") return false;
 
     const sol = await runInDocker(code, language, limits, testInput);
+
     if (sol.status !== "SUCCESS") return true;
 
     return sol.stdout.trim() !== brute.stdout.trim();
   }
+
+  const found = new Set<string>();
 
   let lines = [...originalLines];
   let chunkSize = Math.floor(lines.length / 2);
@@ -29,22 +48,39 @@ export async function minimizeInput(
     let reduced = false;
 
     for (let i = 0; i < lines.length; i += chunkSize) {
-      const candidate = lines
+
+      const candidateLines = lines
         .slice(0, i)
-        .concat(lines.slice(i + chunkSize))
-        .join("\n");
+        .concat(lines.slice(i + chunkSize));
+
+      if (candidateLines.length === 0) continue;
+
+      const candidate = candidateLines.join("\n");
 
       if (await fails(candidate)) {
-        lines = candidate.trim().split("\n");
+
+        if (isSmallEnough(candidate)) {
+          found.add(candidate.trim());
+        }
+
+        lines = candidateLines;
         reduced = true;
-        break;
+
+        if (found.size >= MAX_RESULTS) break;
       }
     }
+
+    if (found.size >= MAX_RESULTS) break;
 
     if (!reduced) {
       chunkSize = Math.floor(chunkSize / 2);
     }
   }
 
-  return lines.join("\n");
+  if (found.size === 0)
+    return [lines.join("\n")];
+
+  return [...found]
+    .sort((a, b) => a.length - b.length)
+    .slice(0, MAX_RESULTS);
 }
