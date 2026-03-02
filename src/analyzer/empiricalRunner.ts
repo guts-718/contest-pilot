@@ -9,6 +9,28 @@ interface Sample {
   n: number;
   time: number;
 }
+
+function validateGrowth(samples: { n: number; time: number }[]) {
+
+  if (samples.length < 3) return { ok: false, score: 0 };
+
+  let good = 0;
+
+  for (let i = 1; i < samples.length; i++) {
+    const prev = samples[i - 1].time;
+    const curr = samples[i].time;
+
+    if (curr >= prev * 0.75) good++;
+  }
+
+  const score = good / (samples.length - 1);
+
+  return {
+    ok: score >= 0.6,
+    score
+  };
+}
+
 function selectDominantVariable(dslNodes: DSLNode[]) {
 
   const intVars = dslNodes.filter(n => n.kind === "int");
@@ -116,5 +138,19 @@ export async function detectEmpiricalComplexity(
     return { complexity: "UNKNOWN", confidence: 0 };
   }
 
-  return fitComplexity(samples, candidates);
+  const growth = validateGrowth(samples);
+
+  if (!growth.ok) {
+    return {
+      complexity: "UNSTABLE_MEASUREMENTS",
+      confidence: growth.score
+    };
+  }
+
+  const fit = fitComplexity(samples, candidates);
+
+  return {
+    complexity: fit.complexity,
+    confidence: fit.confidence * growth.score
+  };
 }
