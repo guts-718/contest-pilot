@@ -1,11 +1,13 @@
 import { DSLNode } from "../generator/dslParser";
 import { generateInput } from "../generator/generator";
 import { runInDocker } from "../executor/dockerRunner";
+import { minimizeInput } from "./minimizer";
 
 interface SweepResult {
   case: string;
   status: string;
   timeMs: number;
+  minimizedInput?: string;
 }
 
 function clone(nodes: DSLNode[]): DSLNode[] {
@@ -27,55 +29,62 @@ export async function runEdgeSweep(
   limits: { timeMs: number; memoryMB: number },
   nodes: DSLNode[],
   bruteCode?: string
-) {
+): Promise<SweepResult[]> {
 
   const results: SweepResult[] = [];
 
-  const cases = [
-    "min",
-    "max",
-    "worst",
-    "random",
-    "alt"
-  ];
+  const cases = ["min", "max", "worst", "random", "alt"];
 
   for (const c of cases) {
     const testNodes = clone(nodes);
 
-    if (c !== "random")
+    if (c !== "random") {
       applyMode(testNodes, c);
+    }
 
     const input = generateInput(testNodes);
+
     let status = "SUCCESS";
     let timeMs = 0;
+    let minimizedInput: string | undefined = undefined;
 
     if (bruteCode) {
-    const brute = await runInDocker(bruteCode, language, limits, input);
+      const brute = await runInDocker(bruteCode, language, limits, input);
 
-    if (brute.status !== "SUCCESS") {
+      if (brute.status !== "SUCCESS") {
         status = "BRUTE_ERROR";
-    } else {
-
+      } else {
         const sol = await runInDocker(code, language, limits, input);
+        timeMs = sol.timeMs;
 
         if (sol.status !== "SUCCESS") {
-        status = sol.status;
+          status = sol.status;
         } else if (sol.stdout.trim() !== brute.stdout.trim()) {
-        status = "WA";
+          status = "WA";
+
+          minimizedInput = await minimizeInput(
+            input,
+            code,
+            bruteCode,
+            language,
+            limits
+          );
         } else {
-        status = "PASS";
+          status = "PASS";
         }
-
-        timeMs = sol.timeMs;
-    }
-    }
-    else {
-    const sol = await runInDocker(code, language, limits, input);
-    status = sol.status;
-    timeMs = sol.timeMs;
+      }
+    } else {
+      const sol = await runInDocker(code, language, limits, input);
+      status = sol.status;
+      timeMs = sol.timeMs;
     }
 
-    results.push({ case: c, status, timeMs });
+    results.push({
+      case: c,
+      status,
+      timeMs,
+      minimizedInput
+    });
   }
 
   return results;
