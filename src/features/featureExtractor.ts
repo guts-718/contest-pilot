@@ -1,3 +1,5 @@
+import { extractKeywords } from "./keywordExtractor";
+
 interface ConstraintFeature {
   variable: string;
   min?: number;
@@ -27,11 +29,11 @@ interface StatsBlock {
   digitCount: number;
   inequalityCount: number;
 }
-
 export interface FeatureVector {
   constraints: ConstraintBlock;
   structure: StructureBlock;
   stats: StatsBlock;
+  keywords: ReturnType<typeof extractKeywords>;
 }
 
 function extractConstraints(text: string): ConstraintBlock {
@@ -116,9 +118,16 @@ function extractStats(text: string): StatsBlock {
 }
 
 export function extractFeatures(problemText: string): FeatureVector {
+
+  const constraints = extractConstraints(problemText);
+  const structure = extractStructure(problemText);
+  const stats = extractStats(problemText);
+  const keywords = extractKeywords(problemText);
+
   return {
-    constraints: extractConstraints(problemText),
-    structure: extractStructure(problemText),
-    stats: extractStats(problemText)
+    constraints,
+    structure,
+    stats,
+    keywords
   };
 }
