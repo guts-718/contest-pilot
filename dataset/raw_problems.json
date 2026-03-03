@@ -1,0 +1,8 @@
+[
+  {
+    "id": "sample_1",
+    "platform": "codeforces",
+    "raw_text": "1 <= n <= 200000 ... Given a graph ...",
+    "labels": ["graph"]
+  }
+]

@@ -1,0 +1,82 @@
+[
+  {
+    "id": "sample_1",
+    "platform": "codeforces",
+    "raw_text": "1 <= n <= 200000 ... Given a graph ...",
+    "features": {
+      "constraints": {
+        "variables": [
+          {
+            "variable": "n",
+            "min": 1,
+            "max": 200000,
+            "range": 199999
+          }
+        ]
+      },
+      "structure": {
+        "hasGraph": true,
+        "hasTree": false,
+        "hasPermutation": false,
+        "hasMatrix": false,
+        "hasString": false,
+        "hasQueries": false,
+        "multipleTestCases": false
+      },
+      "stats": {
+        "statementLength": 38,
+        "wordCount": 10,
+        "digitCount": 7,
+        "inequalityCount": 2
+      },
+      "keywords": {
+        "categories": {
+          "graph": 1,
+          "dp": 0,
+          "math": 0,
+          "data_structures": 0,
+          "queries": 0,
+          "greedy": 0,
+          "combinatorics": 0
+        },
+        "keywords": {
+          "graph": 1
+        },
+        "normalized": {
+          "graph_density": 0.16666666666666666,
+          "dp_density": 0,
+          "math_density": 0,
+          "data_structures_density": 0,
+          "queries_density": 0,
+          "greedy_density": 0,
+          "combinatorics_density": 0
+        }
+      },
+      "magnitude": {
+        "largestConstraint": 200000,
+        "logLargestConstraint": 5.301029995663981,
+        "quadraticFeasibilityScore": 0.11649500072266983,
+        "cubicFeasibilityScore": 0,
+        "linearRequiredScore": 0.8835049992773302
+      },
+      "interactions": {
+        "rangeQueryPressureScore": 0,
+        "largeGraphScore": 0.8835049992773302,
+        "sparseGraphScore": 0,
+        "permutationLargeScore": 0,
+        "stringAlgorithmPressure": 0,
+        "heavyMathScore": 0
+      },
+      "output": {
+        "isDecisionProblem": 0,
+        "isCountingProblem": 0,
+        "isOptimizationProblem": 0,
+        "isConstructiveProblem": 0,
+        "isPathOutput": 0
+      }
+    },
+    "labels": [
+      "graph"
+    ]
+  }
+]

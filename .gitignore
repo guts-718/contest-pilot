@@ -1,2 +1,5 @@
 notes_for_me
 node_modules
+
+__pycache__
+venv

@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "ts-node-dev --respawn --transpile-only src/server/index.ts",
-    "debug": "cross-env DEBUG=true ts-node-dev --respawn --transpile-only src/server/index.ts"
+    "debug": "cross-env DEBUG=true ts-node-dev --respawn --transpile-only src/server/index.ts",
+    "build:dataset": "ts-node scripts/buildDataset.ts"
   },
   "keywords": [],
   "author": "",
