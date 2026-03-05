@@ -5,6 +5,7 @@ from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.metrics import f1_score, hamming_loss
 from sklearn.preprocessing import StandardScaler
 import joblib
+from sklearn.ensemble import RandomForestClassifier
 
 from dataset import load_dataset, flatten_features
 from embedder import TextEmbedder
@@ -46,19 +47,42 @@ def main():
     Y = mlb.fit_transform(labels)
 
     print("Training model...")
+    # model = OneVsRestClassifier(
+    #     LogisticRegression(
+    #         max_iter=2000,
+    #         class_weight="balanced",
+    #         n_jobs=-1
+    #     )
+    # )
+
     model = OneVsRestClassifier(
-        LogisticRegression(
-            max_iter=2000,
-            class_weight="balanced",
-            n_jobs=-1
-        )
+    RandomForestClassifier(
+        n_estimators=200,
+        max_depth=None,
+        n_jobs=-1
+    )
     )
 
     model.fit(X, Y)
 
     print("Evaluating...")
-    preds = model.predict(X)
+    probs = model.predict_proba(X)
 
+    preds = np.zeros_like(probs)
+    # use threshold when confident, use top-k when uncertain
+    THRESHOLD = 0.5
+    TOP_K = 3
+
+    for i,row in enumerate(probs):
+
+        selected = np.where(row >= THRESHOLD)[0]
+
+        if len(selected) == 0:
+            top_k = np.argsort(row)[-TOP_K:]
+            preds[i, top_k] = 1
+        else:
+            preds[i, selected] = 1
+    
     print("Micro F1:", f1_score(Y, preds, average="micro"))
     print("Macro F1:", f1_score(Y, preds, average="macro"))
     print("Hamming Loss:", hamming_loss(Y, preds))
@@ -81,9 +105,18 @@ if __name__ == "__main__":
 
 
 
-# Evaluating...
+# Evaluating logistic regression
 # Micro F1: 0.42786036036036035
 # Macro F1: 0.37856979632675986
 # Hamming Loss: 0.18129460462460747
+# Saving model...
+# Done.
+
+
+
+# Evaluating random forest: 
+# Micro F1: 0.8075791725560607
+# Macro F1: 0.7874837554718107
+# Hamming Loss: 0.03594775906365972
 # Saving model...
 # Done.
