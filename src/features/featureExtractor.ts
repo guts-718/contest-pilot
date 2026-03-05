@@ -1,5 +1,5 @@
 import { extractKeywords } from "./keywordExtractor";
-
+import {EmbeddingResult, extractEmbedding} from "./embeddingExtractor";
 interface ConstraintFeature {
   variable: string;
   min?: number;
@@ -64,6 +64,10 @@ export interface FeatureVector {
   magnitude: MagnitudeBlock;
   interactions: InteractionBlock;
   output: OutputBlock;
+  embedding?: {
+    vector: number[];
+    dimension: number;
+    };
 }
 
 function extractConstraints(text: string): ConstraintBlock {
@@ -274,7 +278,7 @@ function extractStats(text: string): StatsBlock {
   };
 }
 
-export function extractFeatures(problemText: string): FeatureVector {
+export async function extractFeatures(problemText: string, useEmbedding = false): Promise<FeatureVector> {
 
   const constraints = extractConstraints(problemText);
   const structure = extractStructure(problemText);
@@ -284,7 +288,10 @@ export function extractFeatures(problemText: string): FeatureVector {
   const interactions = extractInteractions(structure, magnitude, keywords);
 
   const output = extractOutputFeatures(problemText);
-
+  // let embedding: EmbeddingResult;
+  // if (useEmbedding) {
+  //   embedding = await extractEmbedding(problemText);
+  //   }
   return {
     constraints,
     structure,
