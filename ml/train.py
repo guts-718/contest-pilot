@@ -166,6 +166,8 @@ from sklearn.metrics import label_ranking_average_precision_score
 from dataset import load_dataset, flatten_features
 from embedder import TextEmbedder
 
+from sklearn.decomposition import PCA
+
 
 DATA_PATH = "../dataset/processed_filtered.json"
 MODEL_PATH = "../models/classifier.pkl"
@@ -232,6 +234,10 @@ def main():
     print("Extracting embeddings...")
     embedder = TextEmbedder()
     embeddings = np.array(embedder.encode(texts))
+
+    # Reduce embeddings
+    pca = PCA(n_components=128, random_state=42)
+    embeddings = pca.fit_transform(embeddings)
 
     # ----------------------------
     # Structured features
@@ -332,3 +338,13 @@ if __name__ == "__main__":
 
 # Micro F1: 0.4447403462050599
 # Macro F1: 0.26556179339719893
+
+
+
+
+# result after PCA:
+# Evaluating...
+# Micro F1: 0.4447403462050599
+# Macro F1: 0.26556179339719893
+# Hamming Loss: 0.10567251461988304
+# LRAP: 0.5847845456456008
