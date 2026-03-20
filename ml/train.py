@@ -166,7 +166,9 @@ from sklearn.metrics import label_ranking_average_precision_score
 from dataset import load_dataset, flatten_features
 from embedder import TextEmbedder
 
+
 from sklearn.decomposition import PCA
+from lightgbm import LGBMClassifier
 
 
 DATA_PATH = "../dataset/processed_filtered.json"
@@ -280,11 +282,23 @@ def main():
     # Model
     # ----------------------------
     print("Training model...")
+    # model = OneVsRestClassifier(
+    #     RandomForestClassifier(
+    #         n_estimators=200,
+    #         n_jobs=-1,
+    #         random_state=42
+    #     )
+    # )
+
+    from lightgbm import LGBMClassifier
+
     model = OneVsRestClassifier(
-        RandomForestClassifier(
-            n_estimators=200,
-            n_jobs=-1,
-            random_state=42
+        LGBMClassifier(
+            n_estimators=300,
+            learning_rate=0.05,
+            max_depth=-1,
+            num_leaves=64,
+            n_jobs=-1
         )
     )
 
@@ -348,3 +362,9 @@ if __name__ == "__main__":
 # Macro F1: 0.26556179339719893
 # Hamming Loss: 0.10567251461988304
 # LRAP: 0.5847845456456008
+
+# result after LGBM classifier:
+# Micro F1: 0.4484277373758066
+# Macro F1: 0.2984187405059649
+# Hamming Loss: 0.10497076023391813
+# LRAP: 0.5957493814688993
